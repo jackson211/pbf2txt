@@ -2,10 +2,12 @@
 
 **Convert OSM's `pbf` file to `txt` format.**
 
+Simple CLI tool to convert pbf file into lat and lon only txt
+
 ## Example
 
-```rust
-
+```bash
+./target/release/pbf2txt -i andorra-latest.osm.pbf
 ```
 
 # License

@@ -7,16 +7,16 @@ use std::io::{Result, Write};
 #[clap(author="Haozhan Shi", version, about, long_about = None)]
 struct Args {
     /// Input file path
-    #[clap(short, long)]
+    #[clap(short, long, help = "Input file path")]
     input: String,
 
     /// Output file path
-    #[clap(short, long)]
+    #[clap(short, long, help = "Output file path")]
     output: Option<String>,
 
     /// Show statistics of lat and lon
-    #[clap(short, long)]
-    stats: Option<bool>,
+    #[clap(short, long, parse(from_flag), help = "Show statistics of lat and lon")]
+    stats: bool,
 }
 
 fn write_file(content: &Vec<(f64, f64)>, filename: &OsStr) -> Result<()> {
@@ -27,7 +27,7 @@ fn write_file(content: &Vec<(f64, f64)>, filename: &OsStr) -> Result<()> {
     Ok(())
 }
 
-fn convert(infile: &OsStr, outfile: Option<&OsStr>, stats: Option<bool>) -> std::io::Result<()> {
+fn convert(infile: &OsStr, outfile: Option<&OsStr>, stats: bool) -> std::io::Result<()> {
     // File handle
     let mut in_path = std::path::PathBuf::from(infile);
     let r = File::open(&in_path).unwrap();
@@ -53,16 +53,13 @@ fn convert(infile: &OsStr, outfile: Option<&OsStr>, stats: Option<bool>) -> std:
     }
 
     // Optional print all nodes stats
-    match stats {
-        Some(true) => {
-            println!(
-                "Total {} nodes, mean coord: {}, {}",
-                nb_nodes,
-                sum_lat / nb_nodes as f64,
-                sum_lon / nb_nodes as f64
-            );
-        }
-        _ => {}
+    if stats {
+        println!(
+            "Total {} nodes, mean coord: {}, {}",
+            nb_nodes,
+            sum_lat / nb_nodes as f64,
+            sum_lon / nb_nodes as f64
+        );
     }
 
     // Collect all lat and lon into Vec<(f64, f64)>
