@@ -4,11 +4,23 @@
 
 Simple CLI tool to convert pbf file into lat and lon only txt
 
+## Build
+
+```bash
+cargo build --release
+```
+
 ## Example
 
 ```bash
 ./target/release/pbf2txt -i andorra-latest.osm.pbf
 ```
+
+CLI attributes:
+
+- `-i [INPUT_PATH]`: input file path
+- `-o [OUTPUT_PATH]`: optional output file path
+- `-s`: optional show statistics of lat and lon
 
 # License
 

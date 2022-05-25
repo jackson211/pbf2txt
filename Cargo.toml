@@ -10,9 +10,7 @@ description = "Convert OSM PBF to text format"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["cli", "osm", "pbf", "txt", "spatial"]
-categories = ["data-structures", "command-line-utilities"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+categories = ["command-line-utilities"]
 
 [dependencies]
 osmpbfreader = "0.15.2"
