@@ -2,6 +2,9 @@
 
 **Convert OSM's `pbf` file to `txt` format.**
 
+[![crates.io version](https://img.shields.io/crates/v/pbf2txt)](https://crates.io/crates/pbf2txt)
+[![dependency status](https://deps.rs/repo/github/jackson211/pbf2txt/status.svg)](https://deps.rs/repo/github/jackson211/pbf2txt)
+
 Simple CLI tool to convert pbf file into lat and lon only txt
 
 ## Build
