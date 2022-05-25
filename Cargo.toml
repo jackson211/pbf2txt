@@ -1,12 +1,12 @@
 [package]
-name = "learned_hashmap"
+name = "pbf2txt"
 version = "0.1.0"
-authors = ["jackson211 <jackson21182@gmail.com>"]
-edition = "2018"
+authors = ["Haozhan Shi <jackson21182@gmail.com>"]
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4"
-env_logger = "0.7"
-osmpbfreader = "0.13.4"
+log = "0.4.17"
+osmpbfreader = "0.15.2"
+clap = { version = "3.1.18", features = ["derive"] }

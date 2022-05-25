@@ -1,14 +1,25 @@
-#[macro_use]
-extern crate log;
-extern crate env_logger;
-extern crate osmpbfreader;
-use std::path::Path;
-
-// use std::fmt;
+use clap::Parser;
+use std::ffi::OsStr;
 use std::fs::File;
-use std::io::prelude::*;
+use std::io::{Result, Write};
 
-fn write_file(content: &Vec<(f64, f64)>, filename: &str) -> std::io::Result<()> {
+#[derive(Parser, Debug)]
+#[clap(author="Haozhan Shi", version, about, long_about = None)]
+struct Args {
+    /// Input file path
+    #[clap(short, long)]
+    input: String,
+
+    /// Output file path
+    #[clap(short, long)]
+    output: Option<String>,
+
+    /// Show statistics of lat and lon
+    #[clap(short, long)]
+    stats: Option<bool>,
+}
+
+fn write_file(content: &Vec<(f64, f64)>, filename: &OsStr) -> Result<()> {
     let mut file = File::create(filename)?;
     for (x, y) in content {
         writeln!(file, "{} {}", x, y)?;
@@ -16,86 +27,92 @@ fn write_file(content: &Vec<(f64, f64)>, filename: &str) -> std::io::Result<()> 
     Ok(())
 }
 
-fn count(filename: &std::ffi::OsStr) -> (Vec<(f64, f64)>, f64, f64) {
-    let r = std::fs::File::open(&std::path::Path::new(filename)).unwrap();
+fn convert(infile: &OsStr, outfile: Option<&OsStr>, stats: Option<bool>) -> std::io::Result<()> {
+    // File handle
+    let mut in_path = std::path::PathBuf::from(infile);
+    let r = File::open(&in_path).unwrap();
     let mut pbf = osmpbfreader::OsmPbfReader::new(r);
+
     let mut nb_nodes = 0;
     let mut sum_lon = 0.;
     let mut sum_lat = 0.;
 
-    let mut mean_x = 0.0;
-    let mut mean_y = 0.0;
-    let mut c = 0.0;
-    let mut m2 = 0.0;
-
     let mut x_nodes: Vec<f64> = Vec::new();
     let mut y_nodes: Vec<f64> = Vec::new();
 
-    for obj in pbf.par_iter().map(Result::unwrap) {
-        info!("{:?}", obj);
+    for obj in pbf.par_iter().map(core::result::Result::unwrap) {
         if let osmpbfreader::OsmObj::Node(node) = obj {
             nb_nodes += 1;
-            let x = node.lon();
-            let y = node.lat();
-            sum_lon += node.lon();
-            sum_lat += node.lat();
-
-            // n += 1;
-            let dx = x - mean_x;
-            mean_x += dx / f64::from(nb_nodes);
-            mean_y += (y - mean_y) / f64::from(nb_nodes);
-            c += dx * (y - mean_y);
-
-            let dx2 = x - mean_x;
-            m2 += dx * dx2;
+            let x = node.lat();
+            let y = node.lon();
+            sum_lat += x;
+            sum_lon += y;
             x_nodes.push(x);
             y_nodes.push(y);
         }
     }
 
-    println!(
-        "Total {} nodes, mean coord: {}, {}",
-        nb_nodes,
-        sum_lat / nb_nodes as f64,
-        sum_lon / nb_nodes as f64,
-    );
+    // Optional print all nodes stats
+    match stats {
+        Some(true) => {
+            println!(
+                "Total {} nodes, mean coord: {}, {}",
+                nb_nodes,
+                sum_lat / nb_nodes as f64,
+                sum_lon / nb_nodes as f64
+            );
+        }
+        _ => {}
+    }
 
-    let cov = c / f64::from(nb_nodes - 1);
-    let var = m2 / f64::from(nb_nodes - 1);
-    assert!(var >= 0.0);
-    let slope: f64 = cov / var;
-    let intercept = mean_y - slope * mean_x;
-
+    // Collect all lat and lon into Vec<(f64, f64)>
     let mut all_nodes = x_nodes
         .iter()
         .cloned()
         .zip(y_nodes.iter().cloned())
         .collect::<Vec<(f64, f64)>>();
 
+    // Sort along lat
     all_nodes.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
-    // Convert file path
-    let path = Path::new(filename);
-    let stem = path.file_stem().unwrap_or(std::ffi::OsStr::new(""));
-    let v: Vec<&str> = stem.to_str().unwrap().split(".").collect();
-    let mut outfile = v[0].trim().to_string();
-    outfile.push_str(".txt");
+    // Convert output file path if provided, otherwise use input file path
+    let out_path = match outfile {
+        Some(outfile) => outfile,
+        None => {
+            in_path.set_extension("txt");
+            in_path.as_ref()
+        }
+    };
 
-    match write_file(&all_nodes, &outfile) {
+    match write_file(&all_nodes, out_path) {
         Ok(file) => file,
         Err(error) => panic!("Problem opening the file: {:?}", error),
     };
 
-    (all_nodes, intercept, slope)
+    println!("Writen to file: {:#?}", out_path);
+
+    Ok(())
+}
+
+fn option_string_to_os_str(input: &Option<String>) -> Option<&OsStr> {
+    match input {
+        Some(s) => Some(OsStr::new(s)),
+        None => None,
+    }
+}
+
+fn arg_parse(args: Args) {
+    let infile = args.input;
+    let outfile = option_string_to_os_str(&args.output);
+    let stats = args.stats;
+
+    match convert(OsStr::new(&infile), outfile, stats) {
+        Ok(_) => (),
+        Err(e) => println!("Error: {:?}", e),
+    }
 }
 
 fn main() {
-    env_logger::init();
-    let args: Vec<_> = std::env::args_os().collect();
-    if args.len() == 2 {
-        println!("counting objects...");
-        count(&args[1]);
-    } else {
-        println!("Input file path not given");
-    }
+    let args = Args::parse();
+    arg_parse(args);
 }
